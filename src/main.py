@@ -47,3 +47,5 @@ import numpy as np
 tmp = np.array([0.4,0.5,100e-9])
 
 m2(tmp)
+
+print('hi')
