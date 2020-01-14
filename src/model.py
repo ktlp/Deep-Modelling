@@ -29,13 +29,10 @@ class Model():
         self.type = type
         if self.type == 'regressor':
             self.net = Regressor()
-            #self.trainer = Regression_Trainer(n_epochs=100, weight_decay=1e-7)
-            #self.trainer = Trainer(self.net, n_epochs=3, weight_decay=1e-7)
         else:
             self.net = Classifier()
-            #self.trainer = Classifier_Trainer()
 
-        self.trainer = Trainer(self.net, n_epochs=15, weight_decay=1e-7)
+        self.trainer = Trainer(self.net, n_epochs=5, weight_decay=1e-7)
 
         self.dataset = dataset
         self.x_scaler = self.dataset.x_scaler
@@ -43,8 +40,13 @@ class Model():
             self.y_scaler = self.dataset.y_scaler
             
     def train(self):
-        self.trainer.fit(self.dataset, self.net)
+        self.trainer.fit(self.dataset, self.net, validate=1)
 
+    def test(self):
+        self.trainer.score(self.dataset, self.net)
+
+    def train_validate(self):
+        self.trainer
     def save(self, PATH):
 
         dump(self.x_scaler, 'x_scaler.bin', compress=True)
@@ -84,5 +86,6 @@ class Model():
 
         if (not scaled) & (hasattr(self, 'y_scaler')):
             output = self.y_scaler.scaler.inverse_transform(output)
-
+        if self.type == 'classifier':
+            output = np.argmax(output,axis=1)
         return output

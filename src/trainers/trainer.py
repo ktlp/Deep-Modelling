@@ -11,6 +11,8 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 
+import numpy as np
+
 class Trainer(BaseTrainer):
 	def __init__(self, network, optimizer_name: str = 'adam', lr: float = 0.001, n_epochs: int = 20,
 				 lr_milestones: tuple = (), batch_size: int = 16, weight_decay: float = 1e-6, device: str = 'cuda',
@@ -36,81 +38,90 @@ class Trainer(BaseTrainer):
 		self.test_time = None
 		self.test_scores = None
 
+	def train_epoch(self, net :BaseNet, train_loader ):
+		self.accuracy.zero()
+		net.train()
+		self.scheduler.step()
 
-	def fit(self, dataset: BaseDataset, net: BaseNet):
-		logger = logging.getLogger()
+		loss_epoch = 0.0
+		n_batches = 0
+		dist = 0
+		epoch_start_time = time.time()
+		for data in train_loader:
+			inputs, y = data
+
+			# Zero the network parameter gradients
+			self.optimizer.zero_grad()
+
+			# Update network parameters via backpropagation: forward + backward + optimize
+			outputs = self.predict(inputs, net)
+			loss = self.criterion(outputs, y)
+			if torch.isnan(loss):
+				raise ValueError('loss is nan while training')
+			self.accuracy(inputs, outputs, y)
+			loss.backward()
+			self.optimizer.step()
+
+			loss_epoch += loss.item()
+			n_batches += 1
+
+		# log epoch statistics
+		epoch_train_time = time.time() - epoch_start_time
+		return loss_epoch, self.accuracy.value, epoch_train_time, n_batches
+
+
+	def fit(self, dataset: BaseDataset, net: BaseNet, validate = 0):
+
+		# initialize logger
+		self.logger = logging.getLogger()
 
 		# Get train data loader
 		train_loader, _ = dataset.loaders(batch_size=self.batch_size, num_workers=self.n_jobs_dataloader)
 
 		# Set optimizer (Adam optimizer for now)
-		optimizer = optim.Adam(net.parameters(), lr=self.lr, weight_decay=self.weight_decay,
+		self.optimizer = optim.Adam(net.parameters(), lr=self.lr, weight_decay=self.weight_decay,
 							   amsgrad=self.optimizer_name == 'amsgrad')
-
 		# Set learning rate scheduler
-		scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestones, gamma=0.1)
+		self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=self.lr_milestones, gamma=0.1)
 
-		# Early stopping
-
-		# Loss criterion
-		#self.criterion = self.weighted_mse
-		# self.criterion = nn.MSELoss()
-		# Training
-		logger.info('Starting training...')
+		self.logger.info('Starting training...')
 		start_time = time.time()
-		net.train()
+
+
 		for epoch in range(self.n_epochs):
 
-			scheduler.step()
 			if epoch in self.lr_milestones:
-				logger.info('  LR scheduler: new learning rate is %g' % float(scheduler.get_lr()[0]))
+				self.logger.info('  LR scheduler: new learning rate is %g' % float(self.scheduler.get_lr()[0]))
 
-			loss_epoch = 0.0
-			n_batches = 0
-			dist = 0
-			epoch_start_time = time.time()
-			for data in train_loader:
-				inputs, y = data
-
-				# Zero the network parameter gradients
-				optimizer.zero_grad()
-
-				# Update network parameters via backpropagation: forward + backward + optimize
-				outputs = self.predict(inputs, net)
-				loss = self.criterion(outputs, y)
-				self.accuracy(epoch, inputs, outputs, y)
-				loss.backward()
-				optimizer.step()
-
-				loss_epoch += loss.item()
-				n_batches += 1
-
+			loss_epoch, accuracy, epoch_train_time, n_batches = self.train_epoch(net, train_loader)
 
 			# log epoch statistics
-			epoch_train_time = time.time() - epoch_start_time
-			logger.info('  Epoch {}/{}\t Time: {:.3f}\t Loss: {:.8f}\t Accuracy: {:.4f}'
-						.format(epoch + 1, self.n_epochs, epoch_train_time, loss_epoch / n_batches,
+			if validate > 0 :
+				validation_score, validation_time, validation_accuracy = self.score(dataset, net)
+				self.logger.info('  Epoch {}/{}\t Time: {:.3f}\t Loss: {:.8f}\t Accuracy: {:.4f}\t Validation Time: {:.3f}\t Validation Loss: {:.4f}\t Validation Accuracy: {:.4f}'
+								 .format(epoch + 1, self.n_epochs, epoch_train_time, loss_epoch,
+										 self.accuracy.value, validation_time,validation_score, validation_accuracy  ))
+			else:
+				self.logger.info('  Epoch {}/{}\t Time: {:.3f}\t Loss: {:.8f}\t Accuracy: {:.4f}'
+						.format(epoch + 1, self.n_epochs, epoch_train_time, loss_epoch ,
 								self.accuracy.value))
+
+
 		self.train_time = time.time() - start_time
-		logger.info('Training time: %.3f' % self.train_time)
-
-		logger.info('Finished training.')
-
+		self.logger.info('Training time: %.3f' % self.train_time)
+		self.logger.info('Finished training.')
 		return net
 
 	def score(self, dataset: BaseDataset, net: BaseNet):
-		logger = logging.getLogger()
-
-		# Set device for network
 
 		# Get test data loader
 		_, test_loader = dataset.loaders(batch_size=self.batch_size, num_workers=self.n_jobs_dataloader)
 
 		# Testing
-		logger.info('Starting testing...')
+		self.accuracy.zero()
+
 		start_time = time.time()
 
-		net.eval()
 		loss_total = 0
 		with torch.no_grad():
 			for data in test_loader:
@@ -119,11 +130,10 @@ class Trainer(BaseTrainer):
 				outputs = self.predict(inputs, net)
 				loss = self.criterion(outputs, y)
 				loss_total += loss.item()
+				self.accuracy(inputs,outputs, y)
+		test_time = time.time() - start_time
 
-		self.test_time = time.time() - start_time
-		logger.info('Testing time: %.3f' % self.test_time)
-
-		self.test_scores = loss_total
+		return loss_total, test_time, self.accuracy.value
 
 	def predict(self, input: BaseDataset, net: BaseNet):
 		return net(input)

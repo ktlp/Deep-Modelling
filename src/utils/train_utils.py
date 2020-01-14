@@ -16,13 +16,15 @@ class Success_rate():
 		self.epoch_counter = 0
 		self.input_counter = 0
 
-	def __call__(self, epoch, inputs, outputs, targets):
-		if self.epoch_counter == epoch:
-			self.input_counter += inputs.size(0)
-			self.counter += inputs.size(0) - torch.nonzero(torch.max(outputs, dim=1)[1] - targets).size(0)
-		else:
-			self.input_counter = inputs.size(0)
-			self.counter = inputs.size(0) - torch.nonzero(torch.max(outputs, dim=1)[1] - targets).size(0)
+	def __call__(self, inputs, outputs, targets):
+		self.input_counter += inputs.size(0)
+		self.counter += inputs.size(0) - torch.nonzero(torch.max(outputs, dim=1)[1] - targets).size(0)
+		return
+
+	def zero(self):
+		self.counter = 0
+		self.epoch_counter = 0
+		self.input_counter = 0
 		return
 
 	@property
@@ -36,15 +38,16 @@ class Mean_accuracy():
 		self.input_counter = 0
 		self.DELTA = 1e-6
 
-	def __call__(self, epoch, inputs, outputs, targets):
-		if self.epoch_counter == epoch:
-			self.input_counter += inputs.size(0)
-			diff = torch.abs((outputs - targets) )/(targets + self.DELTA)
-			self.counter += torch.mean(diff)
-		else:
-			self.input_counter = inputs.size(0)
-			diff = torch.abs((outputs - targets) )/(targets + self.DELTA)
-			self.counter = torch.mean(diff)
+	def __call__(self, inputs, outputs, targets):
+		self.input_counter += inputs.size(0)
+		diff = torch.abs((outputs - targets) )/(targets + self.DELTA)
+		self.counter += torch.mean(diff)
+		return
+
+	def zero(self):
+		self.counter = 0
+		self.epoch_counter = 0
+		self.input_counter = 0
 		return
 
 	@property
