@@ -36,16 +36,18 @@ trainer.fit(b,model_2)
 '''
 
 from src.model import Model
-m = Model('regressor', a)
+m = Model('classifier', b)
 m.train()
+#m = Model('regressor', a)
+#m.train()
 
-m.save(r'model.pth')
+#m.save(r'model.pth')
 
-m2 = Model('regressor',a)
-m2.load('model.pth')
+#m2 = Model('regressor',a)
+#m2.load('model.pth')
 import numpy as np
 tmp = np.array([0.4,0.5,100e-9])
 
-m2(tmp)
+#m2(tmp)
 
 print('hi')

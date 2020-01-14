@@ -4,6 +4,7 @@ from src.models.Regressor import Regressor
 from src.models.Classifier import Classifier
 from src.trainers.regressor import Regression_Trainer
 from src.trainers.classifier_trainer import Classifier_Trainer
+from src.trainers.trainer import Trainer
 from src.base.base_trainer import BaseTrainer
 from src.base.base_dataset import BaseDataset
 from src.base.base_net import BaseNet
@@ -28,11 +29,13 @@ class Model():
         self.type = type
         if self.type == 'regressor':
             self.net = Regressor()
-            self.trainer = Regression_Trainer(n_epochs=100, weight_decay=1e-7)
+            #self.trainer = Regression_Trainer(n_epochs=100, weight_decay=1e-7)
+            #self.trainer = Trainer(self.net, n_epochs=3, weight_decay=1e-7)
         else:
             self.net = Classifier()
-            self.trainer = Classifier_Trainer()
+            #self.trainer = Classifier_Trainer()
 
+        self.trainer = Trainer(self.net, n_epochs=15, weight_decay=1e-7)
 
         self.dataset = dataset
         self.x_scaler = self.dataset.x_scaler

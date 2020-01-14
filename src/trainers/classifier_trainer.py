@@ -94,7 +94,7 @@ class Classifier_Trainer(BaseTrainer):
         # Testing
         logger.info('Starting testing...')
         start_time = time.time()
-        idx_label_score = []
+
         net.eval()
         loss_total = 0
         with torch.no_grad():

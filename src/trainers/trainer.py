@@ -1,7 +1,9 @@
 from src.base.base_trainer import BaseTrainer
 from src.base.base_dataset import BaseDataset
 from src.base.base_net import BaseNet
-from src.utils.train_utils import weighted_mse
+from src.models.Regressor import Regressor
+from src.models.Classifier import Classifier
+from src.utils.train_utils import Mean_accuracy, Success_rate, Weighted_mse
 import logging
 import time
 
@@ -10,26 +12,30 @@ import torch.optim as optim
 import torch.nn as nn
 
 class Trainer(BaseTrainer):
-	def __init__(self, optimizer_name: str = 'adam', lr: float = 0.001, n_epochs: int = 20,
+	def __init__(self, network, optimizer_name: str = 'adam', lr: float = 0.001, n_epochs: int = 20,
 				 lr_milestones: tuple = (), batch_size: int = 16, weight_decay: float = 1e-6, device: str = 'cuda',
 				 n_jobs_dataloader: int = 0):
 		super().__init__(optimizer_name, lr, n_epochs, lr_milestones, batch_size, weight_decay, device,
 						 n_jobs_dataloader)
+
+		# assertion
+		assert isinstance(network, (Regressor, Classifier))
+		if isinstance(network, Regressor):
+			# set up criterion, acuracy metric
+			self.criterion = Weighted_mse()
+			self.accuracy = Mean_accuracy()
+		else:
+			# set up criterion, accuracy metric
+			self.criterion = nn.CrossEntropyLoss()
+			self.accuracy = Success_rate()
+
 
 		# Results
 		self.train_time = None
 		self.test_auc = None
 		self.test_time = None
 		self.test_scores = None
-		self.criterion = weighted_mse()
 
-	@staticmethod
-	def weighted_mse(outputs, targets):
-		MAX = 10 ** 6
-		weights = torch.sqrt(torch.abs(1 / targets))
-		weights[weights > MAX] = MAX
-		loss = torch.mean(weights * (outputs - targets) ** 2)
-		return loss
 
 	def fit(self, dataset: BaseDataset, net: BaseNet):
 		logger = logging.getLogger()
@@ -72,20 +78,19 @@ class Trainer(BaseTrainer):
 				# Update network parameters via backpropagation: forward + backward + optimize
 				outputs = self.predict(inputs, net)
 				loss = self.criterion(outputs, y)
+				self.accuracy(epoch, inputs, outputs, y)
 				loss.backward()
 				optimizer.step()
 
 				loss_epoch += loss.item()
 				n_batches += 1
 
-				diff = torch.abs((outputs - y) / (y + 1e-3))
-				dist += torch.mean(diff)
 
 			# log epoch statistics
 			epoch_train_time = time.time() - epoch_start_time
 			logger.info('  Epoch {}/{}\t Time: {:.3f}\t Loss: {:.8f}\t Accuracy: {:.4f}'
 						.format(epoch + 1, self.n_epochs, epoch_train_time, loss_epoch / n_batches,
-								1 - dist.item() / n_batches))
+								self.accuracy.value))
 		self.train_time = time.time() - start_time
 		logger.info('Training time: %.3f' % self.train_time)
 
