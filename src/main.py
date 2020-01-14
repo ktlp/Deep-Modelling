@@ -3,7 +3,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-log_file = r'C:\Users\Kostas\PycharmProjects\Deep-Modeling\logs\log.txt'
+log_file = r'/home/kostastoulou/Documents/Deep_Modeling/logs/log.txt'
 file_handler = logging.FileHandler(log_file)
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
@@ -11,8 +11,8 @@ logger.addHandler(file_handler)
 
 from src.datasets.jds import Jds_dataset
 from src.datasets.region import Region_dataset
-a = Jds_dataset(r'C:\Users\Kostas\PycharmProjects\Deep-Modeling\data\nmos_40nm.csv')
-b =  Region_dataset(r'C:\Users\Kostas\PycharmProjects\Deep-Modeling\data\nmos_40nm.csv')
+a = Jds_dataset(r'/home/kostastoulou/Documents/automation/40nm_tables_v2/nmos_v4/nmos_40nm.csv')
+b =  Region_dataset(r'/home/kostastoulou/Documents/automation/40nm_tables_v2/nmos_v4/nmos_40nm.csv')
 
 
 from src.models.Regressor import Regressor
