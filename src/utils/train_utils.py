@@ -1,5 +1,7 @@
 import torch
 import torch.optim as optim
+import numpy as np
+import os
 
 class Weighted_mse():
 	def __init__(self):
@@ -53,3 +55,43 @@ class Mean_accuracy():
 	@property
 	def value(self):
 		return 1 - self.counter.item()/self.input_counter
+
+class EarlyStopping():
+
+	def __init__(self, patience=7, metric = 'accuracy'):
+		assert metric in ['accuracy', 'loss'], 'Metric monitores should be one of accuracy, loss'
+		self.metric = metric
+		self.patience = patience
+		self.counter = 0
+		self.best_score = None
+		self.early_stop = False
+		self.val_loss_min = np.Inf
+
+
+	def __call__(self, metric, model):
+
+		if self.metric == 'accuracy':
+			score = metric
+		else:
+			score = metric*(-1)
+
+		if self.best_score is None:
+			self.best_score = score
+			self.save_checkpoint(score, model)
+		elif score < self.best_score:
+			self.counter += 1
+			if self.counter >= self.patience:
+				self.early_stop = True
+		else:
+			self.best_score = score
+			self.save_checkpoint(score, model)
+			self.counter = 0
+
+	def save_checkpoint(self, val_loss, model):
+		torch.save(model.state_dict(), 'checkpoint.pt')
+		self.val_loss_min = val_loss
+
+	def load_best_model(self, model):
+		model_dict = torch.load('checkpoint.pt')
+		model.load_state_dict(model_dict)
+		os.remove('checkpoint.pt')

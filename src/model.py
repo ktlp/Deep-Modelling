@@ -10,6 +10,8 @@ from src.base.base_dataset import BaseDataset
 from src.base.base_net import BaseNet
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.externals.joblib import dump, load
+import os
+
 class Model():
     def __init__(self, type, dataset: BaseDataset):
 
@@ -32,7 +34,7 @@ class Model():
         else:
             self.net = Classifier()
 
-        self.trainer = Trainer(self.net, n_epochs=5, weight_decay=1e-7)
+        self.trainer = Trainer(self.net, n_epochs=100, weight_decay=1e-7, early_stopping=True)
 
         self.dataset = dataset
         self.x_scaler = self.dataset.x_scaler
@@ -47,27 +49,36 @@ class Model():
 
     def train_validate(self):
         self.trainer
-    def save(self, PATH):
+    def save(self, PATH,name):
 
-        dump(self.x_scaler, 'x_scaler.bin', compress=True)
+        PATH = os.path.join(PATH, name)
+        if not os.path.exists(PATH):
+            os.mkdir(PATH)
+        else:
+            print('Overwritting model files..')
+
+        dump(self.x_scaler, os.path.join(PATH,'x_scaler.bin'), compress=True)
 
         save_dict = {}
         save_dict['net_dict'] = self.net.state_dict()
 
         if hasattr(self.dataset, 'y_scaler'):
-            dump(self.y_scaler, 'y_scaler.bin', compress=True)
+            dump(self.y_scaler, os.path.join(PATH,'y_scaler.bin'), compress=True)
 
-        torch.save(save_dict, PATH)
+        torch.save(save_dict, os.path.join(PATH,'model'))
 
-    def load(self, PATH):
-        model_dict = torch.load(PATH)
+    def load(self, PATH, name):
+
+        PATH = os.path.join(PATH, name)
+
+        model_dict = torch.load(os.path.join(PATH,'model.pth'))
 
         self.net.load_state_dict(model_dict['net_dict'])
 
-        self.x_scaler = load('x_scaler.bin')
+        self.x_scaler = load(os.path.join(PATH,'x_scaler.bin'))
 
         if hasattr(self.dataset,'y_scaler'):
-            self.y_scaler = load('y_scaler.bin')
+            self.y_scaler = load(os.path.join(PATH,'y_scaler.bin'))
 
 
     def __call__(self, input, scaled=False):
