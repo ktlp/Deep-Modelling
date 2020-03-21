@@ -16,14 +16,28 @@ path = r'/home/kostastoulou/Documents/automation/40nm_tables_v2/nmos_v4/nmos_40n
 
 a = Jds_dataset(path)
 a_lower = Jds_dataset(path, label = 'jds_lower')
-b =  Region_dataset(path)
-c = Vdsat_dataset(path)
-d = Vth_dataset(path)
+#b =  Region_dataset(path)
+#c = Vdsat_dataset(path)
+#d = Vth_dataset(path)
 
+pmos_jds = Jds_dataset('/home/kostastoulou/Documents/automation/40nm_tables_v2/pmos_v2/pmos_40nm_nosweep.csv')
+pmos_jds_lower = Jds_dataset('/home/kostastoulou/Documents/automation/40nm_tables_v2/pmos_v2/pmos_40nm_nosweep.csv', label = 'jds_lower')
+
+pmos_region = Region_dataset('/home/kostastoulou/Documents/automation/40nm_tables_v2/pmos_v2/pmos_40nm_nosweep.csv')
 
 from src.model import Model
 save_path = r'/home/kostastoulou/Documents/Deep_Modeling/models'
+
+
+jds = Model('regressor', a)
+jds_lower = Model('regressor', a_lower)
+jds.train()
+jds.save(save_path,'nmos_jds_full')
+jds_lower.train()
+jds_lower.save(save_path,'nmos_jds_lower_full')
+
 ''':arg
+
 jds = Model('regressor', a)
 jds.train()
 jds.save(save_path, 'jds')
@@ -46,9 +60,8 @@ vth.save(save_path, 'vth')
 #m.train()
 #m = Model('regressor', a)
 #m.train()
-
 #m.save(r'model.pth')
-
+'''
 from sklearn.linear_model import LogisticRegression
 X, y = b.train_set.x_data.numpy()[:,:2],b.train_set.y_data.numpy()
 X_test, y_test = b.test_set.x_data.numpy()[:,:2],b.test_set.y_data.numpy()
@@ -70,17 +83,5 @@ Z = Z.reshape(xx.shape)
 plt.figure(1, figsize=(4, 3))
 plt.pcolormesh(xx, yy, Z, cmap=plt.cm.Paired)
 
-''':arg
-# Plot also the training points
-plt.scatter(X[:, 0], X[:, 1], c=y, edgecolors='k', cmap=plt.cm.Paired)
-plt.xlabel('Sepal length')
-plt.ylabel('Sepal width')
-
-plt.xlim(xx.min(), xx.max())
-plt.ylim(yy.min(), yy.max())
-plt.xticks(())
-plt.yticks(())
-
-'''
-
 plt.show()
+'''

@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="ilektra" compareModeInSync="TEXT" showEqualInSync="true" showDifferentInSync="false" showNewOnTargetInSync="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="kostastoulou@147.102.14.30:12345" compareModeInSync="TEXT" showEqualInSync="true" showDifferentInSync="false" showNewOnTargetInSync="false">
     <serverData>
-      <paths name="ilektra">
+      <paths name="electra">
         <serverdata>
           <mappings>
-            <mapping deploy="/tmp/pycharm_project_470" local="$PROJECT_DIR$" />
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="kostastoulou@147.102.14.30:12345">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/kostastoulou/Documents/Deep_Modeling" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

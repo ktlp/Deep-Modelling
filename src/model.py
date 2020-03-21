@@ -11,7 +11,7 @@ from src.base.base_net import BaseNet
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.externals.joblib import dump, load
 import os
-
+from joblib import dump, load
 class Model():
     def __init__(self, type, dataset: BaseDataset):
 
@@ -71,7 +71,7 @@ class Model():
 
         PATH = os.path.join(PATH, name)
 
-        model_dict = torch.load(os.path.join(PATH,'model.pth'))
+        model_dict = torch.load(os.path.join(PATH,'model'))
 
         self.net.load_state_dict(model_dict['net_dict'])
 
@@ -86,7 +86,9 @@ class Model():
 
         # scale condition
         if not scaled:
-            input_transformed = self.x_scaler.scaler.transform(input.reshape(-1,3))
+            if input.shape[1] != 3:
+                input = np.transpose(input)
+            input_transformed = self.x_scaler.scaler.transform(input)
 
         # to torch tensor
         input = torch.tensor(input_transformed).float()
@@ -99,4 +101,30 @@ class Model():
             output = self.y_scaler.scaler.inverse_transform(output)
         if self.type == 'classifier':
             output = np.argmax(output,axis=1)
+        return output
+
+class Robust_model():
+    def __init__(self, path, name, model_name):
+        self.path = path    # models path
+        self.name = name    # robust_nmos_region
+        self.model_name   = model_name  # region, jds_lower
+        self.model = None
+        self.load()
+
+    def save(self):
+        _ = dump(self.model, os.path.join(self.path,self.name, self.model_name))
+        _ = dump(self.scaler, os.path.join(self.path,self.name, 'scaler.joblib'))
+
+    def load(self):
+
+        PATH = os.path.join(self.path,self.name, self.model_name)
+        SCALER_PATH = os.path.join(self.path,self.name, 'scaler.joblib')
+
+        self.model = load(PATH)
+        self.scaler = load(SCALER_PATH)
+
+
+    def __call__(self, input):
+        input_scaled = self.scaler.transform(input)
+        output = self.model.predict(input_scaled)
         return output

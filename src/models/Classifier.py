@@ -11,7 +11,7 @@ class Classifier(BaseNet):
         self.fc = nn.Linear(3,30)
         self.fc_1 = nn.Linear(30, 30)
         self.fc_2 = nn.Linear(30, 4)
-        self.output = nn.LogSoftmax()
+        self.output = nn.LogSoftmax(dim=1)
         pass
 
     def forward(self, x):

@@ -10,7 +10,7 @@ class Jds_dataset(MosDataset):
         super().__init__(root)
 
         df = pd.read_csv(root)
-        df = df[(df['region'] == 2) | (df['region'] == 3)]
+        #df = df[(df['region'] == 2) | (df['region'] == 3)]
         X = df[['vgs', 'vds', 'L']].to_numpy()
         y = df[label].to_numpy()
 
