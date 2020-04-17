@@ -98,7 +98,7 @@ class Model():
             output = self.net(input).numpy()
 
         if (not scaled) & (hasattr(self, 'y_scaler')):
-            output = self.y_scaler.scaler.inverse_transform(output)
+            output = self.y_scaler.inverse_transform(output)
         if self.type == 'classifier':
             output = np.argmax(output,axis=1)
         return output
@@ -119,6 +119,12 @@ class Robust_model():
 
         PATH = os.path.join(self.path,self.name, self.model_name)
         SCALER_PATH = os.path.join(self.path,self.name, 'scaler.joblib')
+        files = os.listdir(os.path.join(self.path,self.name))
+        if 'yscaler.joblib' in files:
+            self.yscaled = True
+            self.yscaler = load(os.path.join(self.path,self.name, 'yscaler.joblib'))
+        else:
+            self.yscaled = False
 
         self.model = load(PATH)
         self.scaler = load(SCALER_PATH)
@@ -127,4 +133,6 @@ class Robust_model():
     def __call__(self, input):
         input_scaled = self.scaler.transform(input)
         output = self.model.predict(input_scaled)
+        if self.yscaled:
+            output = self.yscaler.inverse_transform(output.reshape(-1,1)).reshape(-1,)
         return output

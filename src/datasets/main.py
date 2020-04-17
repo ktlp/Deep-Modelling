@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 from sklearn.preprocessing import MinMaxScaler
 import torch
+import numpy as np
 
 class CustomDataset(Dataset):
     def __init__(self, x_data, y_data):
@@ -22,17 +23,30 @@ class CustomDataset(Dataset):
 
 class Scaler():
 # add support for pytorch tensors
-    def __init__(self, data):
+    def __init__(self, data, exp=None):
         self.scaler = MinMaxScaler()
+        self.exp = exp
 
         # check for 1-D
         if data.ndim == 1:
             data = data.reshape(-1,1)
-        self.scaler.fit(data)
+        if self.exp:
+            self.scaler.fit(np.power(10,data))
+        else:
+            self.scaler.fit(data)
         self.min = self.scaler.data_min_
         self.max = self.scaler.data_max_
+
+    def inverse_transform(self, data):
+        data = self.scaler.inverse_transform(data.reshape(-1,1))
+        if self.exp:
+            data = np.log10(data)
+        return data.reshape(-1,)
 
     def __call__(self, data):
         if data.ndim == 1:
             data = data.reshape(-1,1)
-        return self.scaler.transform(data)
+        if self.exp:
+            return self.scaler.transform(np.power(10, data))
+        else:
+            return self.scaler.transform(data)

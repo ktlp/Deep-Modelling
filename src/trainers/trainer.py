@@ -87,7 +87,7 @@ class Trainer(BaseTrainer):
 
 		# Early Stopping
 		if self.early_stopping:
-			early_stopping = EarlyStopping(patience=15)
+			early_stopping = EarlyStopping(patience=40)
 
 		self.logger.info('Starting training...')
 		start_time = time.time()
